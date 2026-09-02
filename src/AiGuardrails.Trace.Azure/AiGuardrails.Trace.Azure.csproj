@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>AiGuardrails.Trace.Azure</PackageId>
+    <Description>Azure-sinks voor AiGuardrails.Trace: append-blob per dag plus blob per correlatie-id (Blob Storage) en een App Insights-event met metrics.</Description>
+    <PackageTags>tracing;azure;blob;application-insights;llm;guardrails</PackageTags>
+    <MinVerTagPrefix>trace-azure/v</MinVerTagPrefix>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Azure.Storage.Blobs" />
+    <PackageReference Include="Microsoft.ApplicationInsights" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AiGuardrails.Trace\AiGuardrails.Trace.csproj" />
+  </ItemGroup>
+</Project>

@@ -14,8 +14,8 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- CS1591 (ontbrekende XML-doc) niet als error: samenvattingen staan waar ze iets toevoegen, niet op elke property -->
     <NoWarn>$(NoWarn);CS1591</NoWarn>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- GitHub Packages heeft geen symbol server: PDB (met SourceLink) in de dll embedden i.p.v. een .snupkg -->
+    <DebugType>embedded</DebugType>
     <MinVerDefaultPreReleaseIdentifiers>preview.0</MinVerDefaultPreReleaseIdentifiers>
   </PropertyGroup>
 

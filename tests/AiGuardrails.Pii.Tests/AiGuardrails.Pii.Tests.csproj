@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AiGuardrails.Pii\AiGuardrails.Pii.csproj" />
+  </ItemGroup>
+</Project>
