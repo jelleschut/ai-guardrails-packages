@@ -31,10 +31,15 @@ jobs:
       - run: dotnet restore
       - run: dotnet build --no-restore -c Release -warnaserror
       - run: dotnet test --no-build -c Release
-      - run: dotnet pack "${{ steps.which.outputs.project }}" --no-build -c Release -o artifacts
+      - name: pack
+        env:
+          PROJECT: ${{ steps.which.outputs.project }}
+        run: dotnet pack "$PROJECT" --no-build -c Release -o artifacts
       - name: push naar GitHub Packages
+        env:
+          NUGET_KEY: ${{ secrets.GITHUB_TOKEN }}
         run: |
           dotnet nuget push "artifacts/*.nupkg" \
             --source "https://nuget.pkg.github.com/jelleschut/index.json" \
-            --api-key "${{ secrets.GITHUB_TOKEN }}" \
+            --api-key "$NUGET_KEY" \
             --skip-duplicate

@@ -257,6 +257,9 @@ Uit de reviews tijdens de implementatie, verwerkt in de code en de ADR's van de 
   heeft geen symbol server.
 - `Microsoft.ApplicationInsights` 3.x is een laag over OpenTelemetry zonder `ITelemetryChannel`;
   de sink-tests vangen events en metrics via OpenTelemetry-processors/-exporters op.
+- `AppInsightsTraceSink` zet ook `piiTypes` als property en formatteert getallen met InvariantCulture
+  (het origineel gebruikte de huidige cultuur). Library-awaits gebruiken `ConfigureAwait(false)`.
+- Beide Trace-tags moeten op hetzelfde commit staan (anders NU5104 bij pack van `Trace.Azure`).
 - Testprojecten delen hun xunit-inrichting via `tests/Directory.Build.props`.
 
 ## 10. Relatie met sociale-kaart-rag

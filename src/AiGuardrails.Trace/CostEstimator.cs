@@ -4,7 +4,8 @@ namespace AiGuardrails.Trace;
 public sealed record ModelPrice(string ModelPrefix, double UsdPer1MIn, double UsdPer1MOut, double CachedInputFactor = 0.5);
 
 /// <summary>Raming, geen factuur. Prefix-match op modelnaam (zodat "gpt-4.1-mini-2025-04-14" het tarief van "gpt-4.1-mini" krijgt);
-/// onbekend model valt terug op <c>defaultModelPrefix</c>.</summary>
+/// onbekend model valt terug op <c>defaultModelPrefix</c>. Eerste match wint: zet de meest specifieke prefix vooraan
+/// (bijv. "gpt-4.1-mini" vóór "gpt-4.1").</summary>
 public sealed class CostEstimator
 {
     private readonly IReadOnlyList<ModelPrice> _prices;
