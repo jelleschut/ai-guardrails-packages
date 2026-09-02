@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AiGuardrails.Trace.Azure\AiGuardrails.Trace.Azure.csproj" />
+  </ItemGroup>
+</Project>
