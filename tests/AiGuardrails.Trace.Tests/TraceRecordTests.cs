@@ -55,7 +55,7 @@ public class TraceRecordTests
 
         var back = JsonSerializer.Deserialize<TraceRecord>(json, TraceRecord.JsonOptions)!;
         Assert.Equal("find_help", back.GetExtension<string>("intent"));
-        Assert.Equal([0.9, 0.1], back.GetExtension<double[]>("retrievedScores"));
+        Assert.Equal([0.9, 0.1], back.GetExtension<double[]>("retrievedScores")!);
         Assert.Null(back.GetExtension<string>("bestaat_niet"));
     }
 
@@ -84,8 +84,8 @@ public class TraceRecordTests
         Assert.Equal("refused_medical", t.Outcome);
         Assert.Equal("medical", t.GetExtension<string>("intent"));
         Assert.Equal("zorg", t.GetExtension<string>("domain"));
-        Assert.Equal(["osm:node/123#0"], t.GetExtension<string[]>("retrievedChunkIds"));
-        Assert.Equal([0.031], t.GetExtension<double[]>("retrievedScores"));
+        Assert.Equal(["osm:node/123#0"], t.GetExtension<string[]>("retrievedChunkIds")!);
+        Assert.Equal([0.031], t.GetExtension<double[]>("retrievedScores")!);
 
         var again = JsonSerializer.Serialize(t, TraceRecord.JsonOptions);
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse(LegacyLine), JsonNode.Parse(again)), again);

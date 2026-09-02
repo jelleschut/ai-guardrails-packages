@@ -48,8 +48,8 @@ public sealed record TraceRecord
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    public T GetExtension<T>(string name)
-        => Extensions is not null && Extensions.TryGetValue(name, out var el) ? el.Deserialize<T>(JsonOptions)! : default!;
+    public T? GetExtension<T>(string name)
+        => Extensions is not null && Extensions.TryGetValue(name, out var el) ? el.Deserialize<T>(JsonOptions) : default;
 
     public TraceRecord WithExtension<T>(string name, T value)
     {
