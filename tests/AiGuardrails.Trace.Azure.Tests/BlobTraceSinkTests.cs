@@ -26,4 +26,25 @@ public class BlobTraceSinkTests
         Assert.Equal("traces", new BlobTraceSinkOptions().ContainerName);
         Assert.Equal("ai-traces", new BlobTraceSinkOptions("ai-traces").ContainerName);
     }
+
+    [Fact]
+    public void Partition_is_utc_and_daily_by_default()
+    {
+        var ts = new DateTimeOffset(2026, 8, 29, 23, 30, 0, TimeSpan.FromHours(-2));   // 30-08 01:30 UTC
+        Assert.Equal("2026/08/30.jsonl", Sink().PartitionBlobName(ts));
+    }
+
+    [Fact]
+    public void Partition_format_is_configurable()
+    {
+        var ts = new DateTimeOffset(2026, 8, 29, 13, 5, 0, TimeSpan.Zero);
+        Assert.Equal("2026/08/29/13.jsonl", Sink(new BlobTraceSinkOptions(PartitionFormat: "yyyy'/'MM'/'dd'/'HH")).PartitionBlobName(ts));
+    }
+
+    [Fact]
+    public async Task Null_arguments_are_rejected()
+    {
+        Assert.Throws<ArgumentNullException>(() => new BlobTraceSink(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => Sink().WriteAsync(null!));
+    }
 }

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace AiGuardrails.Trace;
 
@@ -50,8 +51,13 @@ public sealed record TraceRecord
 
     private static JsonSerializerOptions CreateOptions()
     {
-        var o = new JsonSerializerOptions(JsonSerializerDefaults.Web) { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
-        o.MakeReadOnly(populateMissingResolver: true);   // parameterloos gooit: Web-defaults hebben nog geen TypeInfoResolver
+        // Resolver expliciet zetten: MakeReadOnly(populateMissingResolver: true) gooit onder trimming/AOT al bij het laden van het type.
+        var o = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
+        };
+        o.MakeReadOnly();
         return o;
     }
 

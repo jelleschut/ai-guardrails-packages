@@ -21,6 +21,9 @@ await sink.WriteAsync(trace);
 - `Outcome` is een open snake_case-string; het package kent alleen `answered` en `error`.
 - `ITraceSink`/`ITraceReader` zijn de contracten; `CompositeTraceSink` schrijft naar alle sinks
   en gooit nooit. Azure-implementaties: `AiGuardrails.Trace.Azure`.
+- Een geannuleerd token betekent géén trace (de composite sink stopt stil). Geef bij het schrijven van
+  traces `CancellationToken.None` of een shutdown-token mee, niet `HttpContext.RequestAborted`, anders
+  verlies je juist de afgebroken requests.
 - `CorrelationId.New()` geeft 32 lowercase hex; sinks accepteren alleen dat formaat.
 - `CostEstimator` raamt kosten in euro op basis van een instelbare prijstabel.
 - Kernveldnamen (`model`, `outcome`, …) zijn geen geldige uitbreidingsnamen; `WithExtension` gooit dan.

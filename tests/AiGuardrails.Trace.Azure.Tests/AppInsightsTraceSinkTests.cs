@@ -10,7 +10,7 @@ using OtelMetric = OpenTelemetry.Metrics.Metric;
 
 namespace AiGuardrails.Trace.Azure.Tests;
 
-public class AppInsightsTraceSinkTests
+public class AppInsightsTraceSinkTests : IDisposable
 {
     // Microsoft.ApplicationInsights 3.x heeft geen ITelemetryChannel/TelemetryConfiguration.TelemetryChannel meer:
     // de SDK is een dunne laag boven OpenTelemetry geworden. TrackEvent komt binnen als OpenTelemetry LogRecord,
@@ -42,11 +42,22 @@ public class AppInsightsTraceSinkTests
         }
     }
 
-    private static (TelemetryClient Client, CapturingLogProcessor Logs, CapturingMetricExporter Metrics) Client()
+    // TelemetryConfiguration is IDisposable: elke aangemaakte configuratie wordt bewaard en aan het eind van de test opgeruimd.
+    private readonly List<TelemetryConfiguration> _configs = [];
+
+    public void Dispose()
+    {
+        foreach (var c in _configs) c.Dispose();
+        _configs.Clear();
+        GC.SuppressFinalize(this);
+    }
+
+    private (TelemetryClient Client, CapturingLogProcessor Logs, CapturingMetricExporter Metrics) Client()
     {
         var logs = new CapturingLogProcessor();
         var metrics = new CapturingMetricExporter();
         var config = new TelemetryConfiguration { ConnectionString = "InstrumentationKey=00000000-0000-0000-0000-000000000000" };
+        _configs.Add(config);
         config.ConfigureOpenTelemetryBuilder(b =>
         {
             b.WithLogging(l => l.AddProcessor(logs));
@@ -110,5 +121,32 @@ public class AppInsightsTraceSinkTests
 
         Assert.Equal("rag.request", Assert.Single(logs.Events)["microsoft.custom_event.name"]);
         Assert.Superset(new HashSet<string> { "rag.estimatedCostEur", "rag.latencyMs", "rag.tokensIn", "rag.tokensOut" }, metrics.MetricNames);
+    }
+
+    [Fact]
+    public async Task Prompt_hash_is_a_property_and_core_fields_win_over_colliding_extensions()
+    {
+        var (client, logs, _) = Client();
+        var t = (Sample() with { PromptHash = "9c1e2d3f" }).WithExtension("toolCallsCount", "999");
+        await new AppInsightsTraceSink(client).WriteAsync(t);
+
+        var evt = Assert.Single(logs.Events);
+        Assert.Equal("9c1e2d3f", evt["promptHash"]);
+        Assert.Equal("0", evt["toolCallsCount"]);
+    }
+
+    [Fact]
+    public async Task Legacy_record_with_explicit_nulls_does_not_throw()
+    {
+        var (client, logs, _) = Client();
+        var t = System.Text.Json.JsonSerializer.Deserialize<TraceRecord>(
+            """{"correlationId":"3f2a9c1e5b7d4e8f9a0b1c2d3e4f5a6b","timestamp":"2026-08-29T10:15:30+00:00","piiTypes":null,"toolCalls":null,"outcome":null}""",
+            TraceRecord.JsonOptions)!;
+        await new AppInsightsTraceSink(client).WriteAsync(t);
+
+        var evt = Assert.Single(logs.Events);
+        Assert.Equal("", evt["piiTypes"]);
+        Assert.Equal("0", evt["toolCallsCount"]);
+        Assert.Equal("error", evt["outcome"]);
     }
 }

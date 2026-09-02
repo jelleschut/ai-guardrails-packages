@@ -109,15 +109,12 @@ public class TraceRecordTests
     [Fact]
     public void Every_serialized_core_field_is_a_reserved_extension_name()
     {
-        var full = TraceRecord.Start("3f2a9c1e5b7d4e8f9a0b1c2d3e4f5a6b") with
-        {
-            PolicyVersion = "p", Model = "m", ModelVersion = "v", PromptHash = "h", PiiRedacted = true, PiiTypes = ["bsn"],
-            ToolCalls = [new ToolCall("t", "a", 1)], TokensIn = 1, TokensOut = 2, TokensCached = 3, EstimatedCostEur = 4, LatencyMs = 5,
-            Outcome = "o", RefusalReason = "r",
-        };
-        var names = JsonNode.Parse(JsonSerializer.Serialize(full, TraceRecord.JsonOptions))!.AsObject().Select(kv => kv.Key);
+        var names = TraceRecord.JsonOptions.GetTypeInfo(typeof(TraceRecord)).Properties
+            .Select(p => p.Name).Where(n => n != "extensions").ToList();
+        Assert.Equal(16, names.Count);
+        var t = TraceRecord.Start("x");
         foreach (var n in names)
-            Assert.Throws<ArgumentException>(() => full.WithExtension(n, "x"));
+            Assert.Throws<ArgumentException>(() => t.WithExtension(n, "x"));
     }
 
     [Fact]
