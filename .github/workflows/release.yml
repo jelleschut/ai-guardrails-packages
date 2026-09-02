@@ -1,0 +1,40 @@
+name: release
+on:
+  push:
+    tags:
+      - "pii/v*"
+      - "trace/v*"
+      - "trace-azure/v*"
+permissions:
+  contents: read
+  packages: write
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: global.json
+      - name: project bij tag bepalen
+        id: which
+        run: |
+          case "${GITHUB_REF_NAME}" in
+            pii/v*)         echo "project=src/AiGuardrails.Pii/AiGuardrails.Pii.csproj" >> "$GITHUB_OUTPUT" ;;
+            trace/v*)       echo "project=src/AiGuardrails.Trace/AiGuardrails.Trace.csproj" >> "$GITHUB_OUTPUT" ;;
+            trace-azure/v*) echo "project=src/AiGuardrails.Trace.Azure/AiGuardrails.Trace.Azure.csproj" >> "$GITHUB_OUTPUT" ;;
+            *) echo "onbekende tag ${GITHUB_REF_NAME}" >&2; exit 1 ;;
+          esac
+      - run: dotnet restore
+      - run: dotnet build --no-restore -c Release -warnaserror
+      - run: dotnet test --no-build -c Release
+      - run: dotnet pack "${{ steps.which.outputs.project }}" --no-build -c Release -o artifacts
+      - name: push naar GitHub Packages
+        run: |
+          dotnet nuget push "artifacts/*.nupkg" \
+            --source "https://nuget.pkg.github.com/jelleschut/index.json" \
+            --api-key "${{ secrets.GITHUB_TOKEN }}" \
+            --skip-duplicate
