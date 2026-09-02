@@ -124,4 +124,13 @@ public class PiiFilterTests
         Assert.DoesNotContain("address", r.Types);
         Assert.Equal(input, r.Text);
     }
+
+    [Fact]
+    public void Readme_example_holds()
+    {
+        var r = PiiFilter.Redact("mijn bsn is 111222333, mail jan@example.org");
+        Assert.Equal("mijn bsn is [bsn], mail [email]", r.Text);
+        Assert.True(r.Redacted);
+        Assert.Equal(["email", "bsn"], r.Types);   // detectievolgorde (e-mail eerst), niet gesorteerd
+    }
 }
