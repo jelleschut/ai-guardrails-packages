@@ -222,7 +222,7 @@ package-id's zijn daar nog vrij te claimen.
 | Package | Verhuist | Nieuw |
 |---|---|---|
 | Pii | `PiiFilterTests` (13) | — |
-| Trace | serialisatie zonder tekst, round-trip, kostenraming (theory), composite sink gaat door bij fout | round-trip mét extensions (typed get/with); **compatibiliteitstest**: een letterlijke trace-regel uit sociale-kaart-rag (met `intent`, `domain`, `retrievedChunkIds`, `outcome: "refused_medical"`) deserialiseert zonder verlies en serialiseert byte-gelijk terug; `CorrelationId.IsValid`-randgevallen; `CostEstimator` met eigen tabel en onbekend model → default |
+| Trace | serialisatie zonder tekst, round-trip, kostenraming (theory), composite sink gaat door bij fout | round-trip mét extensions (typed get/with); **compatibiliteitstest**: een letterlijke trace-regel uit sociale-kaart-rag (met `intent`, `domain`, `retrievedChunkIds`, `outcome: "refused_medical"`) deserialiseert zonder verlies en serialiseert terug naar een JSON-document dat semantisch gelijk is (`JsonNode.DeepEquals`; veldvolgorde mag verschillen); `CorrelationId.IsValid`-randgevallen; `CostEstimator` met eigen tabel en onbekend model → default |
 | Trace.Azure | — | `BlobTraceSink` weigert ongeldig id (geen netwerk nodig); `AppInsightsTraceSink` mapping via `TelemetryConfiguration` met in-memory channel: kernvelden, extension-strings, array-telling, metrics onder prefix |
 
 `SplitModel` (model/versie-splitsing) blijft in de orchestrator van de bronrepo; hij hoort bij de
