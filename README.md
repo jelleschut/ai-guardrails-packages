@@ -68,7 +68,7 @@ git tag trace-azure/v0.1.0 && git push origin trace-azure/v0.1.0    # …dan Tra
 
 ```
 dotnet build -warnaserror
-dotnet test --no-build          # 76 tests: Pii 32, Trace 38, Trace.Azure 6
+dotnet test --no-build          # 81 tests: Pii 32, Trace 38, Trace.Azure 11
 dotnet pack -c Release -o artifacts
 ```
 

@@ -117,9 +117,9 @@ public sealed record TraceRecord
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extensions { get; init; }
 
     public static TraceRecord Start(string correlationId);
-    public static readonly JsonSerializerOptions JsonOptions;  // Web-defaults, null weglaten
+    public static JsonSerializerOptions JsonOptions { get; }   // Web-defaults, null weglaten; read-only (MakeReadOnly)
     public T? GetExtension<T>(string name);
-    public TraceRecord WithExtension<T>(string name, T value);
+    public TraceRecord WithExtension<T>(string name, T value);  // kernveldnamen geweigerd (hoofdletterongevoelig); null verwijdert
 }
 
 public static class Outcomes { public const string Answered = "answered", Error = "error"; }
@@ -147,7 +147,7 @@ Ontwerpkeuzes:
 public interface ITraceSink   { Task WriteAsync(TraceRecord record, CancellationToken ct = default); }
 public interface ITraceReader { Task<TraceRecord?> ReadAsync(string correlationId, CancellationToken ct = default); }
 public sealed class CompositeTraceSink(IEnumerable<ITraceSink> sinks, ILogger<CompositeTraceSink> log) : ITraceSink;
-public static class CorrelationId { public static string New(); public static bool IsValid(string id); }
+public static class CorrelationId { public static string New(); public static bool IsValid(string? id); public static void EnsureValid(string? id, string paramName = "correlationId"); }
 ```
 
 `CorrelationId.New()` geeft `Guid.NewGuid().ToString("n")` (zoals `AskEndpoint` nu doet);
@@ -162,7 +162,7 @@ public sealed record ModelPrice(string ModelPrefix, double UsdPer1MIn, double Us
 public sealed class CostEstimator(IReadOnlyList<ModelPrice> prices, string defaultModelPrefix, double usdToEur = 0.92)
 {
     public static CostEstimator Default { get; }   // huidige tabel: gpt-4.1-mini, text-embedding-3-small
-    public double EstimateEur(string model, int tokensIn, int tokensOut, int tokensCached);
+    public double EstimateEur(string? model, int tokensIn, int tokensOut, int tokensCached);   // null/onbekend model → default; negatieve aantallen = 0
 }
 ```
 
@@ -175,7 +175,7 @@ voor v2.
 Afhankelijkheden: `AiGuardrails.Trace`, `Azure.Storage.Blobs`, `Microsoft.ApplicationInsights`.
 
 ```csharp
-public sealed record BlobTraceSinkOptions(string ContainerName = "traces");
+public sealed record BlobTraceSinkOptions(string ContainerName = "traces", string PartitionFormat = "yyyy'/'MM'/'dd");   // partitie in UTC; fijner bij >50.000 traces/dag (append-blob-plafond)
 public sealed class BlobTraceSink(BlobServiceClient blobs, BlobTraceSinkOptions? options = null) : ITraceSink, ITraceReader;
 
 public sealed record AppInsightsTraceSinkOptions(string EventName = "ai.request", string MetricPrefix = "ai");
@@ -236,6 +236,28 @@ modelaanroep, niet bij het trace-schema.
   extensions, waarom string-uitkomst, waarom `JsonExtensionData`); ADR-0003 versionering en feed.
 - `docs/trace-schema.md`: veld-voor-veld, afgeleid van `docs/traceability.md` uit de bronrepo,
   met de scheiding kern/extensie gemarkeerd.
+
+## 9a. Afwijkingen tijdens de uitvoering (02-09-2026)
+
+Uit de reviews tijdens de implementatie, verwerkt in de code en de ADR's van de nieuwe repo:
+
+- `JsonOptions` is een read-only property met expliciete `DefaultJsonTypeInfoResolver` (een gedeeld
+  muteerbaar profiel in een package is onveilig; `MakeReadOnly(populateMissingResolver: true)` faalt
+  onder trimming al bij het laden van het type).
+- `WithExtension` weigert kernveldnamen (hoofdletterongevoelig), anders ontstaat een dubbele
+  JSON-sleutel die het kernveld bij teruglezen overschrijft. `null` verwijdert het veld.
+- `CostEstimator` en `CorrelationId.IsValid` zijn null-veilig; gecachte tokens worden begrensd
+  op `tokensIn` (bewuste afwijking van het origineel, identiek resultaat voor de eval-cases).
+- `CompositeTraceSink` stopt stil bij een geannuleerd token (geen LogError, geen throw).
+- `BlobTraceSink` partitioneert in UTC en heeft een `PartitionFormat`-optie vanwege het
+  Azure-plafond van 50.000 blokken per append-blob; `AppInsightsTraceSink` zet ook `promptHash`,
+  laat kernvelden winnen bij een naamconflict met een uitbreiding, en is null-veilig voor
+  legacy-regels met expliciete nulls.
+- Symbolen: PDB embedded in de dll (`DebugType=embedded`) i.p.v. een `.snupkg`; GitHub Packages
+  heeft geen symbol server.
+- `Microsoft.ApplicationInsights` 3.x is een laag over OpenTelemetry zonder `ITelemetryChannel`;
+  de sink-tests vangen events en metrics via OpenTelemetry-processors/-exporters op.
+- Testprojecten delen hun xunit-inrichting via `tests/Directory.Build.props`.
 
 ## 10. Relatie met sociale-kaart-rag
 
