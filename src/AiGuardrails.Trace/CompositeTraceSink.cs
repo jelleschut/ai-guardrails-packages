@@ -22,7 +22,7 @@ public sealed class CompositeTraceSink : ITraceSink
         foreach (var s in _sinks)
         {
             if (ct.IsCancellationRequested) return;
-            try { await s.WriteAsync(record, ct); }
+            try { await s.WriteAsync(record, ct).ConfigureAwait(false); }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { return; }
             catch (Exception ex) { _log.LogError(ex, "trace-sink {Sink} faalde voor {CorrelationId}", s.GetType().Name, record.CorrelationId); }
         }

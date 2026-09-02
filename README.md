@@ -18,13 +18,13 @@ using AiGuardrails.Pii;
 using AiGuardrails.Trace;
 
 var pii = PiiFilter.Redact(question);
-var trace = TraceRecord.Start(CorrelationId.New()) with
+var trace = (TraceRecord.Start(CorrelationId.New()) with
 {
     PolicyVersion = "1.1.0", PiiRedacted = pii.Redacted, PiiTypes = [.. pii.Types],
     Model = "gpt-4.1-mini", TokensIn = 1200, TokensOut = 80,
     EstimatedCostEur = CostEstimator.Default.EstimateEur("gpt-4.1-mini", 1200, 80, 0),
     Outcome = Outcomes.Answered,
-}.WithExtension("intent", "find_help");
+}).WithExtension("intent", "find_help");
 
 ITraceSink sink = new CompositeTraceSink([blobSink, appInsightsSink], logger);   // AiGuardrails.Trace.Azure
 await sink.WriteAsync(trace);
@@ -61,8 +61,11 @@ Versie per package via git-tag en [MinVer](https://github.com/adamralph/minver):
 ```
 git tag pii/v0.1.0 && git push origin pii/v0.1.0                    # publiceert alleen AiGuardrails.Pii
 git tag trace/v0.1.0 && git push origin trace/v0.1.0                # eerst Trace…
-git tag trace-azure/v0.1.0 && git push origin trace-azure/v0.1.0    # …dan Trace.Azure
+git tag trace-azure/v0.1.0 && git push origin trace-azure/v0.1.0    # …dan Trace.Azure, op hetzelfde commit
 ```
+
+Beide Trace-tags op hetzelfde commit: anders krijgt `Trace.Azure` een dependency op een
+prerelease van `Trace` die niet op de feed staat (de pack faalt dan met NU5104).
 
 ## Ontwikkelen
 

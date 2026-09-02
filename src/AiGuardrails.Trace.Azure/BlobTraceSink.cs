@@ -43,12 +43,12 @@ public sealed class BlobTraceSink : ITraceSink, ITraceReader
         var bytes = Encoding.UTF8.GetBytes(line);
 
         var daily = _container.GetAppendBlobClient(PartitionBlobName(record.Timestamp));
-        await daily.CreateIfNotExistsAsync(cancellationToken: ct);
+        await daily.CreateIfNotExistsAsync(cancellationToken: ct).ConfigureAwait(false);
         using (var stream = new MemoryStream(bytes))
-            await daily.AppendBlockAsync(stream, cancellationToken: ct);
+            await daily.AppendBlockAsync(stream, cancellationToken: ct).ConfigureAwait(false);
 
         await _container.GetBlobClient($"by-id/{record.CorrelationId}.json")
-            .UploadAsync(BinaryData.FromBytes(bytes), overwrite: true, ct);
+            .UploadAsync(BinaryData.FromBytes(bytes), overwrite: true, ct).ConfigureAwait(false);
     }
 
     public async Task<TraceRecord?> ReadAsync(string correlationId, CancellationToken ct = default)
@@ -56,7 +56,7 @@ public sealed class BlobTraceSink : ITraceSink, ITraceReader
         if (!CorrelationId.IsValid(correlationId)) return null;
         try
         {
-            var r = await _container.GetBlobClient($"by-id/{correlationId}.json").DownloadContentAsync(ct);
+            var r = await _container.GetBlobClient($"by-id/{correlationId}.json").DownloadContentAsync(ct).ConfigureAwait(false);
             return JsonSerializer.Deserialize<TraceRecord>(r.Value.Content, TraceRecord.JsonOptions);
         }
         catch (RequestFailedException ex) when (ex.Status == 404) { return null; }

@@ -30,6 +30,8 @@ GitHub Packages (naast de repo, zelfde identiteit) of nuget.org.
   nuget.org een workflow-wijziging, geen codewijziging.
 - `Trace.Azure` hangt via `ProjectReference` van `Trace` af; bij pack wordt dat een
   package-dependency op de MinVer-versie van dat moment. Een `Trace`-wijziging die `Trace.Azure`
-  raakt vraagt twee tags, eerst `trace/v…`, dan `trace-azure/v…`.
+  raakt vraagt twee tags, eerst `trace/v…`, dan `trace-azure/v…`, **op hetzelfde commit**; anders
+  verwijst `Trace.Azure` naar een prerelease van `Trace` die niet op de feed staat (pack faalt
+  met NU5104, dankzij warnings-als-errors).
 - Versies volgen semver: breaking change in het trace-schema = major bump van `Trace`.
 - CI bewijst bij elke PR dat de packages packen (droge run met README in het package).
