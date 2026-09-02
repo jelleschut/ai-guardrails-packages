@@ -21,4 +21,14 @@ public class CorrelationIdTests
     [InlineData("../by-id/x", false)]
     [InlineData("", false)]
     public void IsValid(string id, bool expected) => Assert.Equal(expected, CorrelationId.IsValid(id));
+
+    [Fact]
+    public void EnsureValid_throws_on_bad_id_with_param_name()
+        => Assert.Equal("correlationId", Assert.Throws<ArgumentException>(() => CorrelationId.EnsureValid("../x")).ParamName);
+
+    [Fact]
+    public void EnsureValid_accepts_a_new_id() => CorrelationId.EnsureValid(CorrelationId.New());
+
+    [Fact]
+    public void IsValid_is_false_for_null() => Assert.False(CorrelationId.IsValid(null));
 }

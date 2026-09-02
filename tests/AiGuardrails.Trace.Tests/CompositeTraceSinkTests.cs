@@ -35,4 +35,22 @@ public class CompositeTraceSinkTests
         public TraceRecord? Last;
         public Task WriteAsync(TraceRecord r, CancellationToken ct = default) { Last = r; return Task.CompletedTask; }
     }
+
+    [Fact]
+    public async Task Cancelled_token_stops_silently_without_throwing()
+    {
+        var a = new MemorySink();
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        var composite = new CompositeTraceSink([a], NullLogger<CompositeTraceSink>.Instance);
+        await composite.WriteAsync(TraceRecord.Start("c"), cts.Token);
+        Assert.Null(a.Last);
+    }
+
+    [Fact]
+    public void Null_arguments_are_rejected()
+    {
+        Assert.Throws<ArgumentNullException>(() => new CompositeTraceSink(null!, NullLogger<CompositeTraceSink>.Instance));
+        Assert.Throws<ArgumentNullException>(() => new CompositeTraceSink([], null!));
+    }
 }

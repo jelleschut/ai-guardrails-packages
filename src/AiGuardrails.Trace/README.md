@@ -12,6 +12,7 @@ var trace = TraceRecord.Start(CorrelationId.New()) with
     TokensIn = 1200, TokensOut = 80, Outcome = Outcomes.Answered,
 };
 trace = trace.WithExtension("intent", "find_help");   // app-veld, staat plat in de JSON
+ITraceSink sink = new CompositeTraceSink([blobSink, appInsightsSink], logger);   // sinks uit AiGuardrails.Trace.Azure
 await sink.WriteAsync(trace);
 ```
 
@@ -22,3 +23,7 @@ await sink.WriteAsync(trace);
   en gooit nooit. Azure-implementaties: `AiGuardrails.Trace.Azure`.
 - `CorrelationId.New()` geeft 32 lowercase hex; sinks accepteren alleen dat formaat.
 - `CostEstimator` raamt kosten in euro op basis van een instelbare prijstabel.
+- Kernveldnamen (`model`, `outcome`, …) zijn geen geldige uitbreidingsnamen; `WithExtension` gooit dan.
+  Een `null`-waarde verwijdert het veld.
+- Record-gelijkheid is referentie-gelijkheid voor de arrays en de extensions; vergelijk traces via hun JSON,
+  niet met `==`.

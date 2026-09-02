@@ -90,4 +90,40 @@ public class TraceRecordTests
         var again = JsonSerializer.Serialize(t, TraceRecord.JsonOptions);
         Assert.True(JsonNode.DeepEquals(JsonNode.Parse(LegacyLine), JsonNode.Parse(again)), again);
     }
+
+    [Theory]
+    [InlineData("model")]
+    [InlineData("Model")]
+    [InlineData("correlationId")]
+    public void WithExtension_rejects_core_field_names(string name)
+        => Assert.Throws<ArgumentException>(() => TraceRecord.Start("x").WithExtension(name, "hacked"));
+
+    [Fact]
+    public void WithExtension_with_null_removes_the_field()
+    {
+        var t = TraceRecord.Start("x").WithExtension("intent", "a").WithExtension<string?>("intent", null);
+        Assert.Null(t.GetExtension<string>("intent"));
+        Assert.DoesNotContain("intent", JsonSerializer.Serialize(t, TraceRecord.JsonOptions));
+    }
+
+    [Fact]
+    public void Every_serialized_core_field_is_a_reserved_extension_name()
+    {
+        var full = TraceRecord.Start("3f2a9c1e5b7d4e8f9a0b1c2d3e4f5a6b") with
+        {
+            PolicyVersion = "p", Model = "m", ModelVersion = "v", PromptHash = "h", PiiRedacted = true, PiiTypes = ["bsn"],
+            ToolCalls = [new ToolCall("t", "a", 1)], TokensIn = 1, TokensOut = 2, TokensCached = 3, EstimatedCostEur = 4, LatencyMs = 5,
+            Outcome = "o", RefusalReason = "r",
+        };
+        var names = JsonNode.Parse(JsonSerializer.Serialize(full, TraceRecord.JsonOptions))!.AsObject().Select(kv => kv.Key);
+        foreach (var n in names)
+            Assert.Throws<ArgumentException>(() => full.WithExtension(n, "x"));
+    }
+
+    [Fact]
+    public void JsonOptions_are_read_only()
+    {
+        Assert.True(TraceRecord.JsonOptions.IsReadOnly);
+        Assert.Throws<InvalidOperationException>(() => TraceRecord.JsonOptions.PropertyNamingPolicy = null);
+    }
 }

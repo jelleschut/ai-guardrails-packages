@@ -13,8 +13,9 @@ public sealed class CostEstimator
 
     public CostEstimator(IReadOnlyList<ModelPrice> prices, string defaultModelPrefix, double usdToEur = 0.92)
     {
-        _prices = prices;
-        _default = prices.FirstOrDefault(p => p.ModelPrefix == defaultModelPrefix)
+        ArgumentNullException.ThrowIfNull(prices);
+        _prices = [.. prices];
+        _default = _prices.FirstOrDefault(p => string.Equals(p.ModelPrefix, defaultModelPrefix, StringComparison.OrdinalIgnoreCase))
             ?? throw new ArgumentException($"defaultModelPrefix '{defaultModelPrefix}' staat niet in de prijstabel.", nameof(defaultModelPrefix));
         _usdToEur = usdToEur;
     }
@@ -27,12 +28,14 @@ public sealed class CostEstimator
         ],
         "gpt-4.1-mini");
 
-    public double EstimateEur(string model, int tokensIn, int tokensOut, int tokensCached)
+    /// <summary>Raamt de kosten in euro. Een onbekend of <c>null</c>-model valt terug op de default-prijs;
+    /// negatieve tokenaantallen tellen als nul.</summary>
+    public double EstimateEur(string? model, int tokensIn, int tokensOut, int tokensCached)
     {
-        var price = _prices.FirstOrDefault(p => model.StartsWith(p.ModelPrefix, StringComparison.OrdinalIgnoreCase)) ?? _default;
+        var price = (model is null ? null : _prices.FirstOrDefault(p => model.StartsWith(p.ModelPrefix, StringComparison.OrdinalIgnoreCase))) ?? _default;
         var cached = Math.Min(Math.Max(0, tokensCached), Math.Max(0, tokensIn));
         var uncached = Math.Max(0, tokensIn) - cached;
-        var usd = (uncached * price.UsdPer1MIn + cached * price.UsdPer1MIn * price.CachedInputFactor + tokensOut * price.UsdPer1MOut) / 1_000_000;
+        var usd = (uncached * price.UsdPer1MIn + cached * price.UsdPer1MIn * price.CachedInputFactor + Math.Max(0, tokensOut) * price.UsdPer1MOut) / 1_000_000;
         return Math.Round(usd * _usdToEur, 6);
     }
 }

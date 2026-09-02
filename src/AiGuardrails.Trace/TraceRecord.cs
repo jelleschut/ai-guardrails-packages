@@ -37,24 +37,49 @@ public sealed record TraceRecord
     public string Outcome { get; init; } = Outcomes.Error;
     public string? RefusalReason { get; init; }
 
-    /// <summary>App-specifieke velden. Serialiseert plat (geen "extensions"-veld); onbekende velden bij inlezen komen hier terecht.</summary>
+    /// <summary>App-specifieke velden. Serialiseert plat (geen "extensions"-veld); onbekende velden bij inlezen komen hier terecht.
+    /// De dictionary wordt gedeeld door <c>with</c>-kopieën; muteer hem niet in place, gebruik <see cref="WithExtension{T}"/>.</summary>
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? Extensions { get; init; }
 
     public static TraceRecord Start(string correlationId) => new() { CorrelationId = correlationId, Timestamp = DateTimeOffset.UtcNow };
 
-    public static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
-    {
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
+    /// <summary>Web-defaults (camelCase, hoofdletterongevoelig lezen), null weglaten. Read-only; maak een kopie via
+    /// <c>new JsonSerializerOptions(TraceRecord.JsonOptions)</c> als je afwijkende instellingen nodig hebt.</summary>
+    public static JsonSerializerOptions JsonOptions { get; } = CreateOptions();
 
+    private static JsonSerializerOptions CreateOptions()
+    {
+        var o = new JsonSerializerOptions(JsonSerializerDefaults.Web) { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
+        o.MakeReadOnly(populateMissingResolver: true);   // parameterloos gooit: Web-defaults hebben nog geen TypeInfoResolver
+        return o;
+    }
+
+    // Web-defaults lezen hoofdletterongevoelig, dus ook "Model" zou het kernveld overschrijven.
+    private static readonly HashSet<string> CoreFieldNames = new(
+        [
+            "correlationId", "timestamp", "policyVersion", "model", "modelVersion", "promptHash",
+            "piiRedacted", "piiTypes", "toolCalls", "tokensIn", "tokensOut", "tokensCached",
+            "estimatedCostEur", "latencyMs", "outcome", "refusalReason",
+        ],
+        StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Leest een uitbreidingsveld. Ontbreekt het veld, dan <c>default</c>. Past de JSON-vorm niet op <typeparamref name="T"/>
+    /// (bijv. een JSON-null in een niet-nullable <c>int</c>), dan gooit dit <see cref="JsonException"/>; gebruik een nullable
+    /// <typeparamref name="T"/> voor velden die null kunnen zijn.</summary>
     public T? GetExtension<T>(string name)
         => Extensions is not null && Extensions.TryGetValue(name, out var el) ? el.Deserialize<T>(JsonOptions) : default;
 
+    /// <summary>Geeft een kopie met het uitbreidingsveld gezet. Kernveldnamen zijn niet toegestaan (ook niet in andere hoofdletters);
+    /// een <c>null</c>-waarde verwijdert het veld, conform de null-weglaatregel van het record.</summary>
     public TraceRecord WithExtension<T>(string name, T value)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        if (CoreFieldNames.Contains(name))
+            throw new ArgumentException($"'{name}' is een kernveld en kan niet als uitbreiding worden gezet.", nameof(name));
         var copy = Extensions is null ? new Dictionary<string, JsonElement>() : new Dictionary<string, JsonElement>(Extensions);
-        copy[name] = JsonSerializer.SerializeToElement(value, JsonOptions);
+        if (value is null) copy.Remove(name);
+        else copy[name] = JsonSerializer.SerializeToElement(value, JsonOptions);
         return this with { Extensions = copy };
     }
 }
