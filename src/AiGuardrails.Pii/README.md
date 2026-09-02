@@ -8,7 +8,7 @@ using AiGuardrails.Pii;
 var r = PiiFilter.Redact("mijn bsn is 111222333, mail jan@example.org");
 // r.Text     == "mijn bsn is [bsn], mail [email]"
 // r.Redacted == true
-// r.Types    == ["bsn", "email"]
+// r.Types    == ["email", "bsn"]   (volgorde van detectie: e-mail → BSN → adres → telefoon)
 ```
 
 Herkent: BSN (9 cijfers, alleen als de 11-proef slaagt), e-mail, NL-telefoon (06, +31, vast),
