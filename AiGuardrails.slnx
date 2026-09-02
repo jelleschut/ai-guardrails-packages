@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AiGuardrails.Pii/AiGuardrails.Pii.csproj" />
+    <Project Path="src/AiGuardrails.Trace/AiGuardrails.Trace.csproj" />
+    <Project Path="src/AiGuardrails.Trace.Azure/AiGuardrails.Trace.Azure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AiGuardrails.Pii.Tests/AiGuardrails.Pii.Tests.csproj" />
+    <Project Path="tests/AiGuardrails.Trace.Tests/AiGuardrails.Trace.Tests.csproj" />
+    <Project Path="tests/AiGuardrails.Trace.Azure.Tests/AiGuardrails.Trace.Azure.Tests.csproj" />
+  </Folder>
+</Solution>
