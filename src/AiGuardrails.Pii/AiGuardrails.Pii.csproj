@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>AiGuardrails.Pii</PackageId>
+    <Description>Regex-redactie van Nederlandse PII (BSN met 11-proef, e-mail, telefoon, postcode+huisnummer) vóór een prompt het model bereikt. Logt alleen typen, nooit waarden.</Description>
+    <PackageTags>pii;redaction;privacy;llm;guardrails;nl</PackageTags>
+    <MinVerTagPrefix>pii/v</MinVerTagPrefix>
+  </PropertyGroup>
+</Project>
